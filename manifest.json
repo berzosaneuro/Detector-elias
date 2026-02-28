@@ -1,0 +1,16 @@
+{
+  "name": "Emerge Shield Elias",
+  "short_name": "Emerge",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#00F2FF",
+  "icons": [
+    {
+      "src": "https://i.postimg.cc/BPZZBVx0/d705a01b-7dd0-45d9-a218-c148cec7b991.jpg",
+      "sizes": "512x512",
+      "type": "image/jpg",
+      "purpose": "any maskable"
+    }
+  ]
+}
