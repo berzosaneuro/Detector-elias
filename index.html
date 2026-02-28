@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Emerge - Elias Shield</title>
+    <title>Emerge - Elias Shield V7</title>
     
     <!-- CONFIGURACIÓN iPHONE PRO -->
     <link rel="manifest" href="manifest.json">
@@ -11,113 +11,99 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="https://i.postimg.cc/BPZZBVx0/d705a01b-7dd0-45d9-a218-c148cec7b991.jpg">
 
-    <!-- LIBRERÍAS GRATIS -->
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
-        :root { --cy: #00F2FF; --mg: #FF0055; --gr: #00FF9F; --bg: #000; --gl: rgba(255, 255, 255, 0.07); --bl: blur(25px); }
+        :root { --cy: #00F2FF; --mg: #FF0055; --gr: #00FF9F; --or: #FFA500; --bg: #000; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
-        body { background: var(--bg); color: white; margin: 0; font-family: -apple-system, sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; background-image: radial-gradient(circle at 50% 50%, rgba(0, 242, 255, 0.05) 0%, transparent 80%), linear-gradient(rgba(0, 242, 255, 0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 242, 255, 0.02) 1px, transparent 1px); background-size: 100% 100%, 40px 40px, 40px 40px; }
-        header { padding: calc(env(safe-area-inset-top) + 20px) 20px 20px; text-align: center; background: rgba(0,0,0,0.85); backdrop-filter: var(--bl); border-bottom: 0.5px solid rgba(255,255,255,0.1); z-index: 1000; }
-        .logo { width: 55px; filter: drop-shadow(0 0 15px var(--cy)); }
+        body { background: var(--bg); color: white; margin: 0; font-family: -apple-system, sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; background-image: linear-gradient(rgba(0, 242, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 242, 255, 0.05) 1px, transparent 1px); background-size: 30px 30px; }
+        header { padding: calc(env(safe-area-inset-top) + 15px) 20px 15px; background: rgba(0,0,0,0.9); backdrop-filter: blur(20px); border-bottom: 2px solid var(--cy); z-index: 1000; display: flex; align-items: center; justify-content: center; gap: 15px; }
+        .logo { width: 45px; filter: drop-shadow(0 0 10px var(--cy)); }
         .main-content { flex: 1; overflow-y: auto; padding: 20px; padding-bottom: 120px; }
         .screen { display: none; }
-        .active { display: block; animation: iosIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1); }
-        @keyframes iosIn { from { opacity: 0; transform: scale(0.9) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
-        .camera-box { width: 100%; height: 400px; border-radius: 40px; border: 1px solid rgba(255,255,255,0.2); overflow: hidden; position: relative; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+        .active { display: block; }
+        .camera-container { width: 100%; height: 350px; border-radius: 40px; border: 3px solid var(--cy); overflow: hidden; position: relative; box-shadow: 0 0 30px rgba(0, 242, 255, 0.4); }
         #video { width: 100%; height: 100%; object-fit: cover; }
-        .scan-bar { position: absolute; top: 0; width: 100%; height: 100px; background: linear-gradient(to bottom, var(--cy), transparent); opacity: 0.2; animation: scanM 3s infinite ease-in-out; pointer-events: none; }
-        @keyframes scanM { 0%, 100% { top: -10%; } 50% { top: 90%; } }
-        .btn-ios { background: var(--cy); color: black; border: none; width: 100%; padding: 20px; border-radius: 22px; font-size: 17px; font-weight: 700; margin-top: 25px; box-shadow: 0 10px 25px rgba(0, 242, 255, 0.3); transition: 0.3s; }
-        .btn-ios:active { transform: scale(0.96); }
-        .glass-card { background: var(--gl); border-radius: 30px; padding: 25px; margin-top: 25px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: var(--bl); }
-        .danger-alert { border-color: var(--mg); background: rgba(255, 0, 85, 0.1); animation: shake 0.4s; }
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
-        nav { position: fixed; bottom: 0; width: 100%; padding: 15px 0 calc(env(safe-area-inset-bottom) + 10px); background: rgba(0,0,0,0.85); backdrop-filter: var(--bl); display: flex; justify-content: space-around; border-top: 0.5px solid rgba(255,255,255,0.1); z-index: 1000; }
-        .nav-item { color: #666; text-align: center; font-size: 11px; font-weight: 600; }
+        .laser { position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: var(--cy); box-shadow: 0 0 15px var(--cy); animation: laserMove 2s infinite linear; }
+        @keyframes laserMove { 0% { top: 0%; } 100% { top: 100%; } }
+        .risk-meter { width: 110px; height: 110px; border-radius: 50%; border: 6px solid var(--bg); margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 900; position: relative; box-shadow: 0 0 15px rgba(0,0,0,0.5); }
+        .result-card { background: rgba(0, 0, 0, 0.9); border-radius: 35px; padding: 25px; margin-top: -60px; position: relative; z-index: 10; border: 2px solid var(--cy); backdrop-filter: blur(20px); text-align: center; animation: slideUp 0.4s ease-out; }
+        @keyframes slideUp { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .btn-main { background: var(--cy); color: black; border: none; width: 100%; padding: 20px; border-radius: 22px; font-size: 18px; font-weight: 900; margin-top: 15px; text-transform: uppercase; letter-spacing: 2px; box-shadow: 0 10px 20px rgba(0, 242, 255, 0.3); }
+        .btn-reset { background: rgba(255,255,255,0.1); color: white; border: 1px solid white; padding: 10px 20px; border-radius: 15px; margin-top: 15px; font-size: 12px; }
+        nav { position: fixed; bottom: 0; width: 100%; padding: 15px 0 calc(env(safe-area-inset-bottom) + 10px); background: rgba(0,0,0,0.95); backdrop-filter: blur(20px); display: flex; justify-content: space-around; border-top: 1px solid rgba(255, 255, 255, 0.1); z-index: 1000; }
+        .nav-item { color: #444; text-align: center; font-size: 11px; font-weight: 800; }
         .nav-item.active { color: var(--cy); }
-        .nav-item i { margin-bottom: 4px; display: block; margin: 0 auto 5px; }
     </style>
 </head>
 <body>
 
 <header>
     <img src="https://i.postimg.cc/BPZZBVx0/d705a01b-7dd0-45d9-a218-c148cec7b991.jpg" class="logo">
-    <div style="font-size: 10px; color: var(--cy); letter-spacing: 5px; margin-top: 10px; font-weight: 800;">ELIAS SHIELD ACTIVE</div>
+    <div style="font-size: 11px; font-weight: 900; color: var(--cy); letter-spacing: 3px;">SHIELD V7 // NEURAL RISK</div>
 </header>
 
 <div class="main-content">
     <div id="scr-scan" class="screen active">
-        <div class="camera-box">
+        <div class="camera-container">
             <video id="video" autoplay playsinline></video>
-            <div class="scan-bar"></div>
+            <div class="laser"></div>
         </div>
-        <button class="btn-ios" onclick="analyzeIngredients()">ANALIZAR ETIQUETA</button>
+        <div id="ui-box">
+            <button class="btn-main" onclick="startNeuralAnalysis()">ESCANEAR PRODUCTO</button>
+        </div>
         <div id="result-display"></div>
     </div>
-
-    <div id="scr-memory" class="screen">
-        <h2 style="letter-spacing: -1px; margin-bottom: 5px;">Historial de Riesgo</h2>
+    <div id="scr-data" class="screen">
+        <h2 style="color:var(--cy)">HISTORIAL</h2>
         <div id="history-container"></div>
-        <button class="btn-ios" style="background:none; border:1px solid var(--mg); color:var(--mg); margin-top:40px" onclick="clearData()">Borrar Historial</button>
-    </div>
-
-    <div id="scr-impact" class="screen">
-        <h2 style="letter-spacing: -1px;">Estadísticas de Salud</h2>
-        <div class="glass-card"><canvas id="impactChart"></canvas></div>
     </div>
 </div>
 
 <nav>
-    <div class="nav-item active" onclick="nav('scr-scan', this)"><i data-lucide="camera"></i>ESCÁNER</div>
-    <div class="nav-item" onclick="nav('scr-memory', this)"><i data-lucide="database"></i>MEMORIA</div>
-    <div class="nav-item" onclick="nav('scr-impact', this)"><i data-lucide="bar-chart-2"></i>IMPACTO</div>
+    <div class="nav-item active" onclick="nav('scr-scan', this)"><i data-lucide="scan"></i><br>SCAN</div>
+    <div class="nav-item" onclick="nav('scr-data', this)"><i data-lucide="database"></i><br>LOGS</div>
 </nav>
 
 <script>
-    if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
     lucide.createIcons();
     const video = document.getElementById('video');
-    let history = JSON.parse(localStorage.getItem('neural_history_elias') || '[]');
-    const ctxAudio = new (window.AudioContext || window.webkitAudioContext)();
+    let history = JSON.parse(localStorage.getItem('elias_v7_data') || '[]');
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-    function beep(f, t, d) {
-        const osc = ctxAudio.createOscillator(); const g = ctxAudio.createGain();
-        osc.type = t; osc.frequency.value = f; g.gain.setValueAtTime(0.1, ctxAudio.currentTime);
-        g.gain.exponentialRampToValueAtTime(0.0001, ctxAudio.currentTime + d);
-        osc.connect(g); g.connect(ctxAudio.destination); osc.start(); osc.stop(ctxAudio.currentTime + d);
+    function playBeep(f, type, d) {
+        const osc = audioCtx.createOscillator(); const g = audioCtx.createGain();
+        osc.type = type; osc.frequency.value = f; g.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + d);
+        osc.connect(g); g.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + d);
     }
 
-    // --- BASE DE DATOS MAESTRA DE ELIAS ---
-    const ELIAS_DATABASE = {
-        "Linalool": ["linalool", "linalol", "3,7-dimetil-1,6-octadien-3-ol", "78-70-6", "201-134-4", "licareol", "coriandrol", "dl-linalool", "phantol", "cosing 35016"],
-        "Citronellol": ["citronellol", "3,7-dimetil-6-octen-1-ol", "fema 2309", "citronellol extra", "2,6-dimetil-2-octen-8-ol", "3,7-dimetil-oct-6-en-1-ol", "106-22-9", "203-375-0", "cosing 32861"],
-        "Hexyl Cinnamal": ["hexyl cinnamal", "hexilcinamaldehido", "hca", "hexyl cinnamic aldehyde", "jasmonal h", "hexylcinnamaldehyde", "fema 2569", "2-benzylideneoctanal", "101-86-0", "202-983-3", "cosing 40233"],
-        "Methylchloroisothiazolinone": ["methylchloroisothiazolinone", "cmit", "isothiazolinone", "cmi", "mci", "chloromethylisothiazolinone"],
-        "Methylisothiazolinone": ["methylisothiazolinone", "mit", "mi", "2-methyl-4-isothiazolin-3-one", "3(2h)-isothiazolona"],
-        "Benzisothiazolinone": ["benzisothiazolinone", "1,2-benzisothiazol-3(2h)-one", "proxel", "nipacide bit", "acticide bit", "canguard bit", "denicide bit", "2634-33-5", "220-120-9"],
-        "Fragancias": ["parfum", "fragrance", "arome"]
+    // BASE DE DATOS COMPLETA DE ELIAS
+    const RISK_DB = {
+        "Methylisothiazolinone": { weight: 100, synonyms: ["methylisothiazolinone", "mit", "mi", "2-methyl-4-isothiazolin-3-one", "2-methyl-2h-isothiazol-3-one", "3(2h)-isothiazolona"] },
+        "Isotiazolinonas": { weight: 90, synonyms: ["methylchloroisothiazolinone", "benzisothiazolinone", "cmit", "mci", "bit", "isothiazolinone", "1,2-benzisothiazol-3(2h)-one", "proxel"] },
+        "Fragancias": { weight: 40, synonyms: ["linalool", "linalol", "citronellol", "78-70-6", "106-22-9", "hexyl cinnamal", "parfum", "fragrance", "arome"] }
     };
 
-    const flatBadList = Object.values(ELIAS_DATABASE).flat();
+    const flatList = Object.values(RISK_DB).map(d => d.synonyms).flat();
 
     navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }).then(s => video.srcObject = s);
 
     function nav(id, el) {
-        beep(500, 'sine', 0.1);
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById(id).classList.add('active');
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         el.classList.add('active');
-        if(id === 'scr-memory') renderHistory();
     }
 
-    async function analyzeIngredients() {
+    async function startNeuralAnalysis() {
         const display = document.getElementById('result-display');
-        display.innerHTML = '<div class="glass-card">⚙️ CONSULTANDO RED NEURAL ELIAS...</div>';
-        beep(800, 'sine', 0.2);
+        const ui = document.getElementById('ui-box');
+        ui.style.display = 'none';
+        display.innerHTML = '<div class="result-card">🧠 ANALIZANDO...</div>';
+        playBeep(800, 'sine', 0.2);
 
         const canvas = document.createElement('canvas');
         canvas.width = video.videoWidth; canvas.height = video.videoHeight;
@@ -125,40 +111,35 @@
         
         try {
             const { data: { text } } = await Tesseract.recognize(canvas, 'spa+eng');
-            const detectedText = text.toLowerCase();
-            const found = flatBadList.filter(chem => detectedText.includes(chem));
-            
-            if (found.length > 0) {
-                beep(150, 'square', 0.3); if(navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 300]);
-                
-                let family = "Toxina Detectada";
-                for (let [key, synonyms] of Object.entries(ELIAS_DATABASE)) {
-                    if (synonyms.some(s => found.includes(s))) { family = key; break; }
+            const cleanText = text.toLowerCase();
+            let maxRisk = 0; let detected = []; let riskColor = 'var(--gr)';
+
+            for (const [name, data] of Object.entries(RISK_DB)) {
+                if (data.synonyms.some(s => cleanText.includes(s))) {
+                    if (data.weight > maxRisk) maxRisk = data.weight;
+                    detected.push(name);
                 }
-
-                history.push({ date: new Date().toLocaleString(), family, items: found });
-                localStorage.setItem('neural_history_elias', JSON.stringify(history));
-
-                display.innerHTML = `<div class="glass-card danger-alert"><div style="color:var(--mg); font-weight:800; font-size:22px; margin-bottom:10px">¡PELIGRO: ${family.toUpperCase()}!</div><div style="font-size:14px; color:white; font-weight:600">Detectado: ${found.join(', ').toUpperCase()}</div></div>`;
-            } else {
-                beep(1200, 'sine', 0.1);
-                display.innerHTML = `<div class="glass-card" style="border-color:var(--gr)"><div style="color:var(--gr); font-weight:800; font-size:22px; margin-bottom:10px">ESCUDO SEGURO</div><p style="margin:0; opacity:0.8">Producto verificado contra toda la base de datos.</p></div>`;
             }
-        } catch (e) { display.innerHTML = '<div class="glass-card">⚠️ ERROR ÓPTICO</div>'; }
+
+            if (maxRisk > 0) {
+                if (maxRisk >= 85) { riskColor = 'var(--mg)'; playBeep(150, 'sawtooth', 0.6); if(navigator.vibrate) navigator.vibrate([300, 100, 300]); }
+                else { riskColor = 'var(--or)'; playBeep(400, 'sine', 0.4); }
+
+                display.innerHTML = `
+                    <div class="result-card" style="border-color:${riskColor}">
+                        <div class="risk-meter" style="border-color:${riskColor}; color:${riskColor}; box-shadow: 0 0 15px ${riskColor}55">${maxRisk}%</div>
+                        <h2 style="color:${riskColor}; margin:0">${maxRisk >= 85 ? 'PELIGRO CRÍTICO' : 'RIESGO DETECTADO'}</h2>
+                        <p style="font-size:12px; font-weight:bold">${detected.join(' • ')}</p>
+                        <button class="btn-reset" onclick="resetUI()">RE-ESCANEAR</button>
+                    </div>`;
+            } else {
+                playBeep(1000, 'sine', 0.2);
+                display.innerHTML = `<div class="result-card" style="border-color:var(--gr)"><div class="risk-meter" style="border-color:var(--gr); color:var(--gr)">0%</div><h2 style="color:var(--gr); margin:0">SEGURO</h2><button class="btn-reset" onclick="resetUI()">OTRO</button></div>`;
+            }
+        } catch (e) { resetUI(); }
     }
 
-    function renderHistory() {
-        const cont = document.getElementById('history-container');
-        if(history.length === 0) { cont.innerHTML = '<div style="text-align:center; padding:50px; opacity:0.3">HISTORIAL VACÍO</div>'; return; }
-        cont.innerHTML = history.slice().reverse().map(i => `<div class="glass-card" style="padding:15px; margin-top:10px"><div style="font-size:10px; color:var(--cy); margin-bottom:5px">${i.date}</div><div style="font-weight:700; color:var(--mg)">${i.family}</div><div style="font-size:11px; opacity:0.6">${i.items.join(', ')}</div></div>`).join('');
-    }
-
-    function renderStats() {
-        const ctx = document.getElementById('impactChart').getContext('2d');
-        new Chart(ctx, { type: 'line', data: { labels: ['1', '2', '3', '4', '5'], datasets: [{ data: history.slice(-5).map(h => h.items.length), borderColor: '#00F2FF', backgroundColor: 'rgba(0,242,255,0.1)', fill: true, tension: 0.5 }] }, options: { plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { display: false } } } });
-    }
-
-    function clearData() { if(confirm("¿ELIMINAR TODO EL HISTORIAL?")) { localStorage.clear(); history = []; renderHistory(); } }
+    function resetUI() { document.getElementById('result-display').innerHTML = ''; document.getElementById('ui-box').style.display = 'block'; }
 </script>
 </body>
 </html>
