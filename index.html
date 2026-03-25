@@ -117,15 +117,81 @@
     let totalSpent = parseFloat(localStorage.getItem('e_money_24') || '0');
 
     // --- BASE DE DATOS DE ALERGENOS ELIAS (BLINDADA) ---
-    const MASTER_DATABASE = [
-        "methylisothiazolinone", "mit", "mi", "2-methyl-4-isothiazolin-3-one", "neolone", "milisotiazolinona",
-        "methylchloroisothiazolinone", "mci", "cmit", "chloromethylisothiazolinone", "kathon",
-        "benzisothiazolinone", "bit", "proxel", "1,2-benzisothiazol-3(2h)-one",
-        "linalool", "linalol", "78-70-6", "licareol",
-        "citronellol", "citronelol", "106-22-9",
-        "hexyl cinnamal", "hexilcinamaldehido", "hca", "jasmonal h", "101-86-0",
-        "parfum", "fragrance", "arome", "aroma", "perfume", "aromas"
+    const ALLERGEN_GROUPS = [
+        { canonical: 'methylisothiazolinone', aliases: ['methylisothiazolinone', 'mit', 'mi', '2-methyl-4-isothiazolin-3-one', 'neolone', 'milisotiazolinona'] },
+        { canonical: 'methylchloroisothiazolinone', aliases: ['methylchloroisothiazolinone', 'mci', 'cmit', 'chloromethylisothiazolinone', 'kathon'] },
+        { canonical: 'benzisothiazolinone', aliases: ['benzisothiazolinone', 'bit', 'proxel', '1,2-benzisothiazol-3(2h)-one'] },
+        { canonical: 'linalool', aliases: ['linalool', 'linalol', '78-70-6', 'licareol'] },
+        { canonical: 'citronellol', aliases: ['citronellol', 'citronelol', '106-22-9'] },
+        { canonical: 'hexyl cinnamal', aliases: ['hexyl cinnamal', 'hexilcinamaldehido', 'hca', 'jasmonal h', '101-86-0'] },
+        { canonical: 'parfum', aliases: ['parfum', 'fragrance', 'arome', 'aroma', 'perfume', 'aromas'] }
     ];
+
+    function normalizeText(value) {
+        return (value || '')
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]+/g, ' ')
+            .trim()
+            .replace(/\s+/g, ' ');
+    }
+    function levenshteinDistance(a, b) {
+        if (a === b) return 0;
+        const m = a.length;
+        const n = b.length;
+        if (!m) return n;
+        if (!n) return m;
+        const dp = Array.from({ length: m + 1 }, (_, i) => [i]);
+        for (let j = 1; j <= n; j++) dp[0][j] = j;
+        for (let i = 1; i <= m; i++) {
+            for (let j = 1; j <= n; j++) {
+                const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+                dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
+            }
+        }
+        return dp[m][n];
+    }
+
+    function hasFuzzyMatch(term, tokens) {
+        const termTokens = normalizeText(term).split(' ').filter(Boolean);
+        if (!termTokens.length) return false;
+        const needed = termTokens.length;
+        const threshold = Math.max(1, Math.floor(term.replace(/\s+/g, '').length * 0.12));
+        for (let i = 0; i <= tokens.length - needed; i++) {
+            const candidate = tokens.slice(i, i + needed).join(' ');
+            if (Math.abs(candidate.length - term.length) > threshold) continue;
+            if (levenshteinDistance(candidate, term) <= threshold) return true;
+        }
+        return false;
+    }
+
+    function detectAllergens(rawText) {
+        const normalized = normalizeText(rawText);
+        const compact = normalized.replace(/\s+/g, '');
+        const tokens = normalized.split(' ').filter(Boolean);
+        const detected = [];
+
+        ALLERGEN_GROUPS.forEach(group => {
+            const matched = group.aliases.some(alias => {
+                const aliasNorm = normalizeText(alias);
+                const aliasCompact = aliasNorm.replace(/\s+/g, '');
+                if (!aliasNorm) return false;
+
+                // Alias cortos: solo coincidencia exacta por token para evitar falsos positivos.
+                if (aliasCompact.length <= 3) {
+                    return tokens.includes(aliasNorm);
+                }
+
+                if (normalized.includes(aliasNorm) || compact.includes(aliasCompact)) return true;
+                return hasFuzzyMatch(aliasNorm, tokens);
+            });
+
+            if (matched) detected.push(group.canonical);
+        });
+
+        return detected;
+    }
 
     navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', focusMode: 'continuous', width: { ideal: 1920 } } }).then(s => video.srcObject = s);
 
@@ -141,46 +207,53 @@
 
     // --- MOTOR DE ESCANEO DE PRECISIÓN V2.4 ---
     async function runSafetyScan() {
-        const res = document.getElementById('scan-result');
+        const res = document.getElementById('result-area');
         const cam = document.getElementById('cam-box');
         document.getElementById('scan-ui').style.display = 'none';
         res.innerHTML = '<div class="glass-card" style="text-align:center">🧠 ANALIZANDO CADA MOLÉCULA...</div>';
 
-        const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-        const ctx = canvas.getContext('2d');
-        ctx.filter = 'contrast(2) grayscale(1)'; // Máximo contraste para evitar fallos
-        ctx.drawImage(video, 0, 0);
-        
-        const { data: { text } } = await Tesseract.recognize(canvas, 'spa+eng');
-        const cleanText = text.toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (!video.videoWidth || !video.videoHeight) {
+            res.innerHTML = '<div class="glass-card danger-ui">⚠️ Cámara no lista. Espera un segundo y vuelve a intentar.</div>';
+            document.getElementById('scan-ui').style.display = 'block';
+            return;
+        }
 
-        const detected = MASTER_DATABASE.filter(bad => {
-            const badNorm = bad.replace(/[^a-z0-9]/g, '');
-            return cleanText.includes(badNorm);
-        });
+        try {
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.filter = 'contrast(2) grayscale(1)'; // Máximo contraste para evitar fallos
+            ctx.drawImage(video, 0, 0);
+            const { data: { text } } = await Tesseract.recognize(canvas, 'spa+eng');
+            const detected = detectAllergens(text);
 
-        if(detected.length > 0) {
-            cam.classList.add('danger-ui');
-            if(navigator.vibrate) navigator.vibrate([500, 100, 500]);
-            
-            // Auto-guardar en Blacklist
-            blacklist.push({ date: new Date().toLocaleDateString(), items: detected });
-            localStorage.setItem('e_black_24', JSON.stringify(blacklist));
+            if(detected.length > 0) {
+                cam.classList.add('danger-ui');
+                if(navigator.vibrate) navigator.vibrate([500, 100, 500]);
+                
+                // Auto-guardar en Blacklist
+                blacklist.push({ date: new Date().toLocaleDateString(), items: detected });
+                localStorage.setItem('e_black_24', JSON.stringify(blacklist));
 
-            res.innerHTML = `<div class="glass-card danger-ui">
-                <h1 style="color:var(--mg); margin:0; font-size:40px">🚫 PELIGRO</h1>
-                <p style="font-weight:900; margin:10px 0">${detected.join(' + ').toUpperCase()}</p>
-                <button class="btn-ios" style="background:white; font-size:12px" onclick="location.reload()">NUEVA LECTURA</button>
-            </div>`;
-            const speech = new SpeechSynthesisUtterance("¡Peligro! No usar.");
-            window.speechSynthesis.speak(speech);
-        } else {
-            res.innerHTML = `<div class="glass-card" style="border-color:var(--gr)">
-                <h1 style="color:var(--gr); margin:0">✅ SEGURO</h1>
-                <p>Escudo Limpio. Puedes usarlo.</p>
-                <button class="btn-ios" style="background:var(--gr); color:black; font-size:12px" onclick="location.reload()">SIGUIENTE</button>
-            </div>`;
+                res.innerHTML = `<div class="glass-card danger-ui">
+                    <h1 style="color:var(--mg); margin:0; font-size:40px">🚫 PELIGRO</h1>
+                    <p style="font-weight:900; margin:10px 0">${detected.join(' + ').toUpperCase()}</p>
+                    <button class="btn-ios" style="background:white; font-size:12px" onclick="location.reload()">NUEVA LECTURA</button>
+                </div>`;
+                const speech = new SpeechSynthesisUtterance("¡Peligro! No usar.");
+                window.speechSynthesis.speak(speech);
+            } else {
+                res.innerHTML = `<div class="glass-card" style="border-color:var(--gr)">
+                    <h1 style="color:var(--gr); margin:0">✅ SEGURO</h1>
+                    <p>Escudo Limpio. Puedes usarlo.</p>
+                    <button class="btn-ios" style="background:var(--gr); color:black; font-size:12px" onclick="location.reload()">SIGUIENTE</button>
+                </div>`;
+            }
+        } catch (error) {
+            console.error('Error al escanear:', error);
+            res.innerHTML = '<div class="glass-card danger-ui">⚠️ Falló el escaneo OCR. Intenta con más luz y enfoca mejor la etiqueta.</div>';
+            document.getElementById('scan-ui').style.display = 'block';
         }
     }
 
@@ -195,7 +268,7 @@
     }
 
     function renderShopping() {
-        document.getElementById('list-cont').innerHTML = shopping.reverse().map(i => `<div class="glass-card" style="padding:15px">${i}</div>`).join('');
+        document.getElementById('list-cont').innerHTML = shopping.slice().reverse().map(i => `<div class="glass-card" style="padding:15px">${i}</div>`).join('');
     }
 
     function renderBlacklist() {
@@ -220,6 +293,10 @@
     function updateMoney() {
         document.getElementById('money-cont').innerText = totalSpent.toFixed(2) + "€";
     }
+
+    renderShopping();
+    renderBlacklist();
+    updateMoney();
 </script>
 </body>
 </html>
